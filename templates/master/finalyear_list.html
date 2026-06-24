@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Financial Years Directory | Glacier Cold Storage{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3 animate-fade-in">
+    <div>
+        <h1 class="h2 fw-bold text-body-emphasis mb-1">Financial Years</h1>
+        <p class="text-muted mb-0">Configure and manage active accounting and storage cycles.</p>
+    </div>
+    <div>
+        <a href="{% url 'finalyear_create' %}" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm" id="addYearHeaderBtn">
+            <i class="fa-solid fa-plus"></i> Add New Year
+        </a>
+    </div>
+</div>
+
+<!-- CSRF Token for JS AJAX -->
+{% csrf_token %}
+
+<!-- Statistics Cards -->
+<div class="row g-4 mb-4 animate-fade-in">
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm h-100 p-3 bg-body">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                    <i class="fa-solid fa-calendar-days fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted text-uppercase fw-semibold mb-1" style="font-size: 11px; letter-spacing: 0.5px;">Configured Years</h6>
+                    <h3 class="fw-bold mb-0 text-body-emphasis" id="stat-total-years">{{ stats.total_years }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table Card -->
+<div class="card border-0 shadow-sm mb-4 bg-body animate-fade-in">
+    <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="fw-bold mb-0 text-body-emphasis">Financial Years Configuration</h5>
+        {% if search_query %}
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle py-2 px-3 rounded-pill">Filtered by: "{{ search_query }}" ({{ page_obj.paginator.count }} found)</span>
+        {% endif %}
+    </div>
+    
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="yearsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="py-3 px-4">Start Date</th>
+                        <th class="py-3 px-4">End Date</th>
+                        <th class="py-3 px-4">Financial Year Span</th>
+                        <th class="py-3 px-4 text-center" style="width: 130px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for year in page_obj %}
+                    <tr id="year-row-{{ year.pk }}">
+                        <td class="py-3 px-4 fw-semibold text-body-emphasis">{{ year.startdate|date:"d F Y" }}</td>
+                        <td class="py-3 px-4 fw-semibold text-body-emphasis">{{ year.enddate|date:"d F Y" }}</td>
+                        <td class="py-3 px-4 text-primary fw-medium">{{ year }}</td>
+                        <td class="py-3 px-4 text-center">
+                            <div class="d-flex justify-content-center gap-2">
+                                <a href="{% url 'finalyear_update' year.pk %}" class="btn btn-sm btn-outline-primary" title="Edit Year">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger delete-btn" 
+                                        data-pk="{{ year.pk }}" 
+                                        data-name="{{ year }}"
+                                        data-delete-url="{% url 'finalyear_delete' year.pk %}"
+                                        title="Delete Year">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <div class="d-flex flex-column align-items-center justify-content-center text-muted gap-3">
+                                <i class="fa-regular fa-calendar-xmark display-4"></i>
+                                <h5 class="mb-0">No financial years configured</h5>
+                                {% if search_query %}
+                                    <a href="{% url 'finalyear_list' %}" class="btn btn-sm btn-secondary">Clear Search Filter</a>
+                                {% else %}
+                                    <a href="{% url 'finalyear_create' %}" class="btn btn-sm btn-primary">Add First Year</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Pagination Footer -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-transparent border-top py-3 px-4 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+        <span class="text-muted small">
+            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+        </span>
+        <nav aria-label="Years pagination">
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}" class="page-link"><i class="fa-solid fa-angles-left"></i></a>
+                    </li>
+                    <li class="page-item">
+                        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="page-link"><i class="fa-solid fa-angle-left"></i></a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="fa-solid fa-angles-left"></i></span></li>
+                    <li class="page-item disabled"><span class="page-link"><i class="fa-solid fa-angle-left"></i></span></li>
+                {% endif %}
+                
+                <li class="page-item active"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="page-link"><i class="fa-solid fa-angle-right"></i></a>
+                    </li>
+                    <li class="page-item">
+                        <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}" class="page-link"><i class="fa-solid fa-angles-right"></i></a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="fa-solid fa-angle-right"></i></span></li>
+                    <li class="page-item disabled"><span class="page-link"><i class="fa-solid fa-angles-right"></i></span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        const confirmModalText = document.getElementById('confirmModalText');
+        const confirmConfirmBtn = document.getElementById('confirmModalConfirmBtn');
+        
+        // Instantiate Bootstrap Modal
+        const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        
+        let activeDeleteUrl = '';
+        let activeRowId = '';
+
+        // Override header search bar action
+        const searchForm = document.querySelector('.search-form');
+        if (searchForm) {
+            searchForm.action = "{% url 'finalyear_list' %}";
+            const searchInput = document.getElementById('headerSearchInput');
+        }
+
+        // Attach click handlers to delete buttons
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const pk = this.getAttribute('data-pk');
+                const name = this.getAttribute('data-name');
+                activeDeleteUrl = this.getAttribute('data-delete-url');
+                activeRowId = `year-row-${pk}`;
+
+                confirmModalText.innerHTML = `Are you sure you want to delete the financial year <strong>"${name}"</strong>?<br>This will permanently remove its configuration.`;
+                confirmModal.show();
+            });
+        });
+
+        // Confirm Action -> AJAX
+        confirmConfirmBtn.addEventListener('click', function() {
+            if (!activeDeleteUrl) return;
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            confirmConfirmBtn.disabled = true;
+            confirmConfirmBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Deleting...';
+
+            fetch(activeDeleteUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    confirmModal.hide();
+                    
+                    const targetRow = document.getElementById(activeRowId);
+                    if (targetRow) {
+                        targetRow.classList.add('row-fade-out');
+                        setTimeout(() => {
+                            targetRow.remove();
+                            window.location.reload();
+                        }, 500);
+                    }
+                    showToast(data.message, 'success');
+                } else {
+                    showToast(data.error || 'Failed to delete year.', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.', 'danger');
+            })
+            .finally(() => {
+                confirmConfirmBtn.disabled = false;
+                confirmConfirmBtn.innerHTML = 'Delete';
+            });
+        });
+
+        function showToast(message, type) {
+            let container = document.getElementById('messagesContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'messagesContainer';
+                container.className = 'messages-container mb-4';
+                document.querySelector('.page-content-wrapper').prepend(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type === 'danger' ? 'danger' : 'success'} alert-dismissible fade show shadow-sm`;
+            toast.setAttribute('role', 'alert');
+
+            let icon = type === 'success' ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-circle-exclamation"></i>';
+
+            toast.innerHTML = `
+                <span class="me-2">${icon}</span>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                const bsAlert = bootstrap.Alert.getInstance(toast);
+                if (bsAlert) {
+                    bsAlert.close();
+                } else {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+    });
+</script>
+{% endblock %}

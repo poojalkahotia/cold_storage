@@ -1,0 +1,636 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | Glacier Cold Storage{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Custom Autocomplete suggestions styling matching Bootstrap theme */
+    #clientSuggestionList {
+        backdrop-filter: blur(12px);
+        background-color: rgba(var(--bs-body-bg-rgb), 0.95);
+        border: 1px solid var(--bs-border-color);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+        margin-top: 2px;
+    }
+    .suggestion-item {
+        cursor: pointer;
+        padding: 10px 15px;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid rgba(var(--bs-border-color-rgb), 0.5);
+        background: transparent;
+        color: var(--bs-body-color);
+    }
+    .suggestion-item:last-child {
+        border-bottom: none;
+    }
+    .suggestion-item:hover, .suggestion-item.active {
+        background-color: var(--bs-primary-bg-subtle) !important;
+        color: var(--bs-primary-text-emphasis) !important;
+        padding-left: 20px; /* Micro-interaction slide effect */
+    }
+    .suggestion-item .client-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+    .suggestion-item .client-meta {
+        font-size: 0.8rem;
+        opacity: 0.75;
+    }
+    /* Input transition focus styling */
+    #clientSearchInput:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3 animate-fade-in">
+    <div>
+        <h1 class="h2 fw-bold text-body-emphasis mb-1">{{ title }}</h1>
+        <p class="text-muted mb-0">Log incoming stocks receipt with multiple details items, automatic charge totals and dynamic store code.</p>
+    </div>
+    <div>
+        <a href="{% url 'incoming_list' %}" class="btn btn-secondary shadow-sm">
+            <i class="fa-solid fa-arrow-left"></i> Back to Receipts
+        </a>
+    </div>
+</div>
+
+<form method="POST" novalidate id="incomingMasterForm" class="animate-fade-in">
+    {% csrf_token %}
+    {{ form.details_data }}
+    
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger mb-4 shadow-sm">
+            <span class="me-2"><i class="fa-solid fa-triangle-exclamation"></i></span>
+            {% for error in form.non_field_errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Master Fields Card -->
+    <div class="card border-0 shadow-sm mb-4 bg-body">
+        <div class="card-header bg-transparent border-bottom py-3 px-4">
+            <h5 class="fw-bold mb-0 text-body-emphasis">1. Master Receipt Details</h5>
+        </div>
+        
+        <div class="card-body p-4">
+            <!-- Row 1: Incoming No, Date, Lot No -->
+            <div class="row g-3 mb-3">
+                <div class="col-12 col-md-4">
+                    <div class="form-group">
+                        <label for="{{ form.incomingno.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.incomingno.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.incomingno }}
+                        {% if form.incomingno.errors %}
+                            <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.incomingno.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-12 col-md-4">
+                    <div class="form-group">
+                        <label for="{{ form.incoming_date.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.incoming_date.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.incoming_date }}
+                        {% if form.incoming_date.errors %}
+                            <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.incoming_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-12 col-md-4">
+                    <div class="form-group">
+                        <label for="{{ form.lotno.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.lotno.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.lotno }}
+                        {% if form.lotno.errors %}
+                            <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.lotno.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Client Select (Autocomplete Textbox) -->
+            <div class="row g-3 mb-3">
+                <div class="col-12">
+                    <div class="form-group">
+                        <label for="clientSearchInput" class="form-label fw-semibold">
+                            {{ form.client_details.label }} <span class="text-danger">*</span>
+                        </label>
+                        <div class="position-relative">
+                            <div class="input-group">
+                                <span class="input-group-text bg-body text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                <input type="text" id="clientSearchInput" class="form-control" autocomplete="off">
+                                <button class="btn btn-outline-secondary d-none" type="button" id="clearClientBtn"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <div id="clientSuggestionList" class="list-group position-absolute w-100 shadow-lg border-0 mt-1 d-none" style="z-index: 1050; max-height: 175px; overflow-y: auto; border-radius: var(--bs-border-radius);">
+                                <!-- Suggestions will be populated here -->
+                            </div>
+                        </div>
+                        <div class="d-none">
+                            {{ form.client_details }}
+                        </div>
+                        {% if form.client_details.errors %}
+                            <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.client_details.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Auto-fetched Client Details -->
+            <div class="row g-3 mb-3">
+                <div class="col-12">
+                    <div class="card bg-light border-0 py-2 px-3">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                <label class="text-muted text-uppercase fw-bold" style="font-size: 10px; letter-spacing: 0.5px;">Client Address</label>
+                                <input type="text" id="clientAdd1" class="form-control-plaintext py-0 fw-semibold" readonly value="">
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="text-muted text-uppercase fw-bold" style="font-size: 10px; letter-spacing: 0.5px;">Email Address</label>
+                                <input type="text" id="clientEmail" class="form-control-plaintext py-0 fw-semibold" readonly value="">
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="text-muted text-uppercase fw-bold" style="font-size: 10px; letter-spacing: 0.5px;">Mobile Number</label>
+                                <input type="text" id="clientMobile" class="form-control-plaintext py-0 fw-semibold" readonly value="">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 4: Store Code -->
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="form-group">
+                        <label for="{{ form.store_code.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.store_code.label }} (Auto Generated: incomingno-itemname-qty-date)
+                        </label>
+                        {{ form.store_code }}
+                        {% if form.store_code.errors %}
+                            <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.store_code.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Card -->
+    <div class="card border-0 shadow-sm mb-4 bg-body">
+        <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0 text-body-emphasis">2. Stock Details (Items Allocation)</h5>
+        </div>
+        
+        <div class="card-body p-4">
+            <div class="table-responsive mb-3">
+                <table class="table table-hover align-middle mb-0" id="detailsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="min-width: 250px;">Item Name</th>
+                            <th style="width: 160px;">Billing Mode</th>
+                            <th style="width: 140px;" class="text-end">Qty</th>
+                            <th style="width: 140px;" class="text-end">Rate (₹)</th>
+                            <th style="width: 180px;" class="text-end">Store Charge (₹)</th>
+                            <th style="width: 80px;" class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailsTableBody">
+                        <!-- Dynamic items are added here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="addRowBtn">
+                <i class="fa-solid fa-plus me-1"></i> Add Item Row
+            </button>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mb-5">
+        <a href="{% url 'incoming_list' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary" id="saveReceiptSubmitBtn">
+            <i class="fa-solid fa-floppy-disk me-1"></i> {{ button_text }}
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<!-- jQuery CDN -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    const itemsData = {{ items_json|safe }};
+    const partiesData = {{ parties_json|safe }};
+    const isEditMode = {{ is_edit|yesno:"true,false" }};
+
+    $(document).ready(function() {
+        const $clientSearchInput = $('#clientSearchInput');
+        const $clientSuggestionList = $('#clientSuggestionList');
+        const $clearClientBtn = $('#clearClientBtn');
+        const $hiddenClientSelect = $('#id_client_details');
+
+        let activeSuggestionIndex = -1;
+
+        // On document ready / page load, check if there's an initial client selected (e.g. in Edit mode)
+        const initialClient = $hiddenClientSelect.val();
+        if (initialClient) {
+            $clientSearchInput.val(initialClient);
+            $clearClientBtn.removeClass('d-none');
+            triggerClientDetails(initialClient);
+        }
+
+        // Search typing event
+        $clientSearchInput.on('input focus', function() {
+            const query = $(this).val().toLowerCase().trim();
+            activeSuggestionIndex = -1;
+            
+            if (query.length === 0) {
+                $clientSuggestionList.addClass('d-none').empty();
+                $clearClientBtn.addClass('d-none');
+                $hiddenClientSelect.val('').trigger('change');
+                return;
+            }
+
+            $clearClientBtn.removeClass('d-none');
+            const matches = [];
+            let count = 0;
+
+            // Search matches in partiesData (which contains clients dict)
+            Object.keys(partiesData).forEach(function(clientName) {
+                const nameLower = clientName.toLowerCase();
+                const isMatch = nameLower.startsWith(query) || nameLower.split(/[\s\-]+/).some(function(word) {
+                    return word.startsWith(query);
+                });
+                if (isMatch) {
+                    if (count < 4) {
+                        matches.push({
+                            name: clientName,
+                            details: partiesData[clientName]
+                        });
+                        count++;
+                    }
+                }
+            });
+
+            if (matches.length > 0) {
+                $clientSuggestionList.empty().removeClass('d-none');
+                matches.forEach(function(match, index) {
+                    const itemHtml = `
+                        <div class="suggestion-item list-group-item list-group-item-action" data-name="${match.name}" data-index="${index}">
+                            <div class="client-name">${match.name}</div>
+                            <div class="client-meta text-muted">
+                                <i class="fa-solid fa-location-dot me-1"></i>${match.details.add1 || 'No address'} | 
+                                <i class="fa-solid fa-phone me-1"></i>${match.details.mobile || 'No mobile'}
+                            </div>
+                        </div>
+                    `;
+                    $clientSuggestionList.append(itemHtml);
+                });
+            } else {
+                $clientSuggestionList.html(`
+                    <div class="list-group-item text-muted text-center py-3">
+                        <i class="fa-solid fa-circle-info me-1"></i>No clients found
+                    </div>
+                `).removeClass('d-none');
+            }
+        });
+
+        // Click suggestion item
+        $clientSuggestionList.on('click', '.suggestion-item', function() {
+            const selectedName = $(this).data('name');
+            selectClient(selectedName);
+        });
+
+        // Keydown keyboard navigation
+        $clientSearchInput.on('keydown', function(e) {
+            const $items = $clientSuggestionList.find('.suggestion-item');
+            if ($clientSuggestionList.hasClass('d-none') || $items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeSuggestionIndex = (activeSuggestionIndex + 1) % $items.length;
+                highlightSuggestion($items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeSuggestionIndex = (activeSuggestionIndex - 1 + $items.length) % $items.length;
+                highlightSuggestion($items);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (activeSuggestionIndex >= 0 && activeSuggestionIndex < $items.length) {
+                    const selectedName = $($items[activeSuggestionIndex]).data('name');
+                    selectClient(selectedName);
+                }
+            } else if (e.key === 'Escape') {
+                $clientSuggestionList.addClass('d-none');
+            }
+        });
+
+        function highlightSuggestion($items) {
+            $items.removeClass('active');
+            if (activeSuggestionIndex >= 0) {
+                const $activeItem = $($items[activeSuggestionIndex]);
+                $activeItem.addClass('active');
+                
+                // Scroll suggestion item into view inside the list container if needed
+                const containerTop = $clientSuggestionList.scrollTop();
+                const containerBottom = containerTop + $clientSuggestionList.height();
+                const elemTop = $activeItem.position().top + containerTop;
+                const elemBottom = elemTop + $activeItem.outerHeight();
+
+                if (elemBottom > containerBottom) {
+                    $clientSuggestionList.scrollTop(elemBottom - $clientSuggestionList.height());
+                } else if (elemTop < containerTop) {
+                    $clientSuggestionList.scrollTop(elemTop);
+                }
+            }
+        }
+
+        function selectClient(name) {
+            $clientSearchInput.val(name);
+            $hiddenClientSelect.val(name).trigger('change');
+            $clientSuggestionList.addClass('d-none').empty();
+            $clearClientBtn.removeClass('d-none');
+        }
+
+        // Clear button click
+        $clearClientBtn.on('click', function() {
+            $clientSearchInput.val('');
+            $hiddenClientSelect.val('').trigger('change');
+            $clientSuggestionList.addClass('d-none').empty();
+            $(this).addClass('d-none');
+            $clientSearchInput.focus();
+        });
+
+        // Click outside suggestions list to close it
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#clientSearchInput, #clientSuggestionList, #clearClientBtn').length) {
+                $clientSuggestionList.addClass('d-none');
+            }
+        });
+
+        // Event listener on hidden Client Selection change to fetch and fill other details
+        $hiddenClientSelect.on('change', function() {
+            triggerClientDetails(this.value);
+        });
+
+        function triggerClientDetails(selectedClient) {
+            if (selectedClient && partiesData[selectedClient]) {
+                const client = partiesData[selectedClient];
+                $('#clientAdd1').val(client.add1);
+                $('#clientEmail').val(client.email || '—');
+                $('#clientMobile').val(client.mobile);
+            } else {
+                $('#clientAdd1').val('');
+                $('#clientEmail').val('');
+                $('#clientMobile').val('');
+            }
+            updateStoreCode();
+        }
+
+        let rowIdx = 0;
+
+        // Function to insert a row
+        function addDetailRow(itemname = '', mode = 'Monthly', qty = '', rate = '', charge = '') {
+            rowIdx++;
+            
+            let itemOptions = '<option value="">-- Choose Item --</option>';
+            Object.keys(itemsData).forEach(function(key) {
+                const isSelected = key === itemname ? 'selected' : '';
+                itemOptions += `<option value="${key}" ${isSelected}>${key}</option>`;
+            });
+
+            const modeOptions = `
+                <option value="Monthly" ${mode === 'Monthly' ? 'selected' : ''}>Monthly</option>
+                <option value="Yearly" ${mode === 'Yearly' ? 'selected' : ''}>Yearly</option>
+            `;
+
+            const rowHtml = `
+                <tr id="row-${rowIdx}" class="detail-row">
+                    <td>
+                        <select class="form-select form-select-sm item-select" required>
+                            ${itemOptions}
+                        </select>
+                    </td>
+                    <td>
+                        <select class="form-select form-select-sm mode-select" required>
+                            ${modeOptions}
+                        </select>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm text-end qty-input" step="0.01" min="0.01" value="${qty}" required>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm text-end rate-input" step="0.01" min="0.00" value="${rate}" required>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm text-end charge-input" value="${charge}" readonly>
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Remove Row">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+
+            $('#detailsTableBody').append(rowHtml);
+            
+            const $row = $(`#row-${rowIdx}`);
+            attachRowListeners($row);
+            calculateRowCharge($row);
+        }
+
+        function attachRowListeners($row) {
+            // Dropdown selection changes
+            $row.find('.item-select').on('change', function() {
+                const selectedItem = this.value;
+                if (selectedItem && itemsData[selectedItem]) {
+                    const item = itemsData[selectedItem];
+                    $row.find('.mode-select').val(item.mode);
+                    $row.find('.rate-input').val(item.charge.toFixed(2));
+                }
+                calculateRowCharge($row);
+                updateStoreCode();
+            });
+
+            // Input rate changes
+            $row.find('.qty-input, .rate-input, .mode-select').on('input change', function() {
+                calculateRowCharge($row);
+                updateStoreCode();
+            });
+
+            // Trash remove button
+            $row.find('.remove-row-btn').on('click', function() {
+                $row.fadeOut(300, function() {
+                    $row.remove();
+                    updateStoreCode();
+                });
+            });
+        }
+
+        function calculateRowCharge($row) {
+            const qty = parseFloat($row.find('.qty-input').val()) || 0;
+            const rate = parseFloat($row.find('.rate-input').val()) || 0;
+            const charge = qty * rate;
+            
+            $row.find('.charge-input').val(charge.toFixed(2));
+        }
+
+        // Generate Combined Store Code: incomingno-itemname-qty-date
+        function updateStoreCode() {
+            const incomingNo = $('#id_incomingno').val().trim();
+            const incomingDate = $('#id_incoming_date').val();
+            
+            const $firstRow = $('#detailsTableBody tr.detail-row').first();
+            let itemName = '';
+            let qty = '';
+
+            if ($firstRow.length > 0) {
+                itemName = $firstRow.find('.item-select').val() || '';
+                qty = parseFloat($firstRow.find('.qty-input').val()) || '';
+                if (qty !== '') qty = qty.toFixed(2);
+            }
+
+            if (incomingNo && itemName && qty && incomingDate) {
+                const dateObj = new Date(incomingDate);
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const year = dateObj.getFullYear();
+                const formattedDate = `${day}-${month}-${year}`;
+
+                const combined = `${incomingNo}-${itemName}-${qty}-${formattedDate}`;
+                $('#id_store_code').val(combined);
+            } else {
+                $('#id_store_code').val('');
+            }
+        }
+
+        // Add row trigger
+        $('#addRowBtn').on('click', function() {
+            addDetailRow();
+        });
+
+        // Trigger updates on master field changes
+        $('#id_incomingno, #id_incoming_date').on('input change', function() {
+            updateStoreCode();
+        });
+
+        // Load existing row details in Edit or Reload mode
+        const existingDataStr = $('#id_details_data').val();
+        if (existingDataStr) {
+            try {
+                const existingData = JSON.parse(existingDataStr);
+                if (existingData && existingData.length > 0) {
+                    existingData.forEach(row => {
+                        addDetailRow(row.itemname, row.mode, row.qty, row.rate, row.store_charge);
+                    });
+                } else {
+                    addDetailRow();
+                }
+            } catch (e) {
+                console.error("Failed to parse initial details json:", e);
+                addDetailRow();
+            }
+        } else {
+            addDetailRow();
+        }
+
+        // Before submit event: serialize rows
+        $('#incomingMasterForm').on('submit', function(e) {
+            const rows = [];
+            let isValid = true;
+            let errorMessage = '';
+
+            const $detailRows = $('#detailsTableBody tr.detail-row');
+            
+            if ($detailRows.length === 0) {
+                e.preventDefault();
+                showToast("You must add at least one item detail row.", "danger");
+                return false;
+            }
+
+            $detailRows.each(function(idx, el) {
+                const $row = $(el);
+                const itemname = $row.find('.item-select').val();
+                const mode = $row.find('.mode-select').val();
+                const qty = $row.find('.qty-input').val();
+                const rate = $row.find('.rate-input').val();
+
+                if (!itemname) {
+                    isValid = false;
+                    errorMessage = `Row ${idx+1}: Please select an item name.`;
+                    return false;
+                }
+                if (!qty || parseFloat(qty) <= 0) {
+                    isValid = false;
+                    errorMessage = `Row ${idx+1}: Quantity must be greater than zero.`;
+                    return false;
+                }
+                if (!rate || parseFloat(rate) < 0) {
+                    isValid = false;
+                    errorMessage = `Row ${idx+1}: Rate must be non-negative.`;
+                    return false;
+                }
+
+                rows.push({
+                    itemname: itemname,
+                    mode: mode,
+                    qty: qty,
+                    rate: rate
+                });
+            });
+
+            if (!isValid) {
+                e.preventDefault();
+                showToast(errorMessage, "danger");
+                return false;
+            }
+
+            $('#id_details_data').val(JSON.stringify(rows));
+            return true;
+        });
+
+        function showToast(message, type) {
+            let container = document.getElementById('messagesContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'messagesContainer';
+                container.className = 'messages-container mb-4';
+                document.querySelector('.page-content-wrapper').prepend(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type === 'danger' ? 'danger' : 'success'} alert-dismissible fade show shadow-sm`;
+            toast.setAttribute('role', 'alert');
+
+            let icon = type === 'success' ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-circle-exclamation"></i>';
+
+            toast.innerHTML = `
+                <span class="me-2">${icon}</span>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                const bsAlert = bootstrap.Alert.getInstance(toast);
+                if (bsAlert) {
+                    bsAlert.close();
+                } else {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+    });
+</script>
+{% endblock %}

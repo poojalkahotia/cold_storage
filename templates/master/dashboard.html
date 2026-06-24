@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Clients Directory | Glacier Cold Storage{% endblock %}
+
+{% block content %}
+<!-- Dashboard Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3 animate-fade-in">
+    <div>
+        <h1 class="h2 fw-bold text-body-emphasis mb-1">Clients Directory</h1>
+        <p class="text-muted mb-0">Manage client profiles and opening balances.</p>
+    </div>
+    <div>
+        <a href="{% url 'client_details_create' %}" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm" id="addClientHeaderBtn">
+            <i class="fa-solid fa-plus"></i> Add New Client
+        </a>
+    </div>
+</div>
+
+<!-- CSRF Token for JS AJAX -->
+{% csrf_token %}
+
+<!-- Statistics Cards -->
+<div class="row g-4 mb-4 animate-fade-in">
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm h-100 p-3 bg-body">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                    <i class="fa-solid fa-users fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted text-uppercase fw-semibold mb-1" style="font-size: 11px; letter-spacing: 0.5px;">Total Clients</h6>
+                    <h3 class="fw-bold mb-0 text-body-emphasis" id="stat-total-clients">{{ stats.total_clients }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm h-100 p-3 bg-body">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-danger bg-opacity-10 text-danger d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                    <i class="fa-solid fa-arrow-down-long fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted text-uppercase fw-semibold mb-1" style="font-size: 11px; letter-spacing: 0.5px;">Total Opening Dr</h6>
+                    <h3 class="fw-bold mb-0 text-body-emphasis" id="stat-total-debit">₹{{ stats.total_debit|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm h-100 p-3 bg-body">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                    <i class="fa-solid fa-arrow-up-long fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted text-uppercase fw-semibold mb-1" style="font-size: 11px; letter-spacing: 0.5px;">Total Opening Cr</h6>
+                    <h3 class="fw-bold mb-0 text-body-emphasis" id="stat-total-credit">₹{{ stats.total_credit|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table Card -->
+<div class="card border-0 shadow-sm mb-4 bg-body animate-fade-in">
+    <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="fw-bold mb-0 text-body-emphasis">All Registered Clients</h5>
+        {% if search_query %}
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle py-2 px-3 rounded-pill">Filtered by: "{{ search_query }}" ({{ page_obj.paginator.count }} found)</span>
+        {% endif %}
+    </div>
+    
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="clientsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="py-3 px-4">Client Name</th>
+                        <th class="py-3 px-4">City</th>
+                        <th class="py-3 px-4">Mobile</th>
+                        <th class="py-3 px-4">GSTIN</th>
+                        <th class="py-3 px-4 text-end">Opening Dr</th>
+                        <th class="py-3 px-4 text-end">Opening Cr</th>
+                        <th class="py-3 px-4 text-center" style="width: 130px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for client in page_obj %}
+                    <tr id="client-row-{{ client.pk|slugify }}" data-client-name="{{ client.client_name }}" data-opdr="{{ client.opdr }}" data-opcr="{{ client.opcr }}">
+                        <td class="py-3 px-4 fw-semibold text-body-emphasis">{{ client.client_name }}</td>
+                        <td class="py-3 px-4">{{ client.city }}</td>
+                        <td class="py-3 px-4">{{ client.mobile }}</td>
+                        <td class="py-3 px-4">
+                            {% if client.gst %}
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle font-monospace px-2 py-1">{{ client.gst }}</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4 text-end text-danger fw-medium">
+                            {% if client.opdr > 0 %}
+                                ₹{{ client.opdr|floatformat:2 }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4 text-end text-success fw-medium">
+                            {% if client.opcr > 0 %}
+                                ₹{{ client.opcr|floatformat:2 }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <div class="d-flex justify-content-center gap-2">
+                                <a href="{% url 'client_details_update' client.pk %}" class="btn btn-sm btn-outline-primary" title="Edit Client">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger delete-btn" 
+                                        data-pk="{{ client.pk }}" 
+                                        data-name="{{ client.client_name }}"
+                                        data-delete-url="{% url 'client_details_delete' client.pk %}"
+                                        title="Delete Client">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="d-flex flex-column align-items-center justify-content-center text-muted gap-3">
+                                <i class="fa-regular fa-folder-open display-4"></i>
+                                <h5 class="mb-0">No clients found in the system</h5>
+                                {% if search_query %}
+                                    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-secondary">Clear Search Filter</a>
+                                {% else %}
+                                    <a href="{% url 'client_details_create' %}" class="btn btn-sm btn-primary">Add First Client</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Pagination Footer -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-transparent border-top py-3 px-4 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+        <span class="text-muted small">
+            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} parties
+        </span>
+        <nav aria-label="Parties pagination">
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}" class="page-link"><i class="fa-solid fa-angles-left"></i></a>
+                    </li>
+                    <li class="page-item">
+                        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="page-link"><i class="fa-solid fa-angle-left"></i></a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="fa-solid fa-angles-left"></i></span></li>
+                    <li class="page-item disabled"><span class="page-link"><i class="fa-solid fa-angle-left"></i></span></li>
+                {% endif %}
+                
+                <li class="page-item active"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="page-link"><i class="fa-solid fa-angle-right"></i></a>
+                    </li>
+                    <li class="page-item">
+                        <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}" class="page-link"><i class="fa-solid fa-angles-right"></i></a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="fa-solid fa-angle-right"></i></span></li>
+                    <li class="page-item disabled"><span class="page-link"><i class="fa-solid fa-angles-right"></i></span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        const confirmModalText = document.getElementById('confirmModalText');
+        const confirmConfirmBtn = document.getElementById('confirmModalConfirmBtn');
+        
+        // Instantiate Bootstrap modal globally
+        const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        
+        let activeDeleteUrl = '';
+        let activeRowId = '';
+        let activeOpDr = 0;
+        let activeOpCr = 0;
+
+        // Attach click handlers to delete buttons
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const pk = this.getAttribute('data-pk');
+                const name = this.getAttribute('data-name');
+                activeDeleteUrl = this.getAttribute('data-delete-url');
+                
+                // Construct safe slugified row ID
+                const safeId = pk.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+                activeRowId = `client-row-${safeId}`;
+                
+                const row = document.getElementById(activeRowId);
+                if (row) {
+                    activeOpDr = parseFloat(row.getAttribute('data-opdr') || 0);
+                    activeOpCr = parseFloat(row.getAttribute('data-opcr') || 0);
+                }
+
+                confirmModalText.innerHTML = `Are you sure you want to delete the client <strong>"${name}"</strong>?<br>This will permanently remove their master entry and balance details.`;
+                confirmModal.show();
+            });
+        });
+
+        // Confirm Action -> Send AJAX request
+        confirmConfirmBtn.addEventListener('click', function() {
+            if (!activeDeleteUrl) return;
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            confirmConfirmBtn.disabled = true;
+            confirmConfirmBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Deleting...';
+
+            fetch(activeDeleteUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Hide Modal
+                    confirmModal.hide();
+                    
+                    // Animate row removal
+                    const targetRow = document.getElementById(activeRowId);
+                    if (targetRow) {
+                        targetRow.classList.add('row-fade-out');
+                        setTimeout(() => {
+                            targetRow.remove();
+                            updateDashboardStats(activeOpDr, activeOpCr);
+                            
+                            const remainingRows = document.querySelectorAll('#clientsTable tbody tr:not(.no-data)');
+                            if (remainingRows.length === 0) {
+                                window.location.reload();
+                            }
+                        }, 500);
+                    }
+                    showToast(data.message, 'success');
+                } else {
+                    showToast(data.error || 'Failed to delete client.', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.', 'danger');
+            })
+            .finally(() => {
+                confirmConfirmBtn.disabled = false;
+                confirmConfirmBtn.innerHTML = 'Delete';
+            });
+        });
+
+        function updateDashboardStats(drVal, crVal) {
+            const partiesCountElem = document.getElementById('stat-total-clients');
+            const debitSumElem = document.getElementById('stat-total-debit');
+            const creditSumElem = document.getElementById('stat-total-credit');
+
+            if (partiesCountElem) {
+                let currentCount = parseInt(partiesCountElem.innerText);
+                partiesCountElem.innerText = Math.max(0, currentCount - 1);
+            }
+
+            if (debitSumElem && drVal > 0) {
+                let currentDr = parseFloat(debitSumElem.innerText.replace('₹', '').replace(/,/g, ''));
+                let newDr = Math.max(0, currentDr - drVal);
+                debitSumElem.innerText = '₹' + newDr.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+            }
+
+            if (creditSumElem && crVal > 0) {
+                let currentCr = parseFloat(creditSumElem.innerText.replace('₹', '').replace(/,/g, ''));
+                let newCr = Math.max(0, currentCr - crVal);
+                creditSumElem.innerText = '₹' + newCr.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+            }
+        }
+
+        function showToast(message, type) {
+            let container = document.getElementById('messagesContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'messagesContainer';
+                container.className = 'messages-container mb-4';
+                document.querySelector('.page-content-wrapper').prepend(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type === 'danger' ? 'danger' : 'success'} alert-dismissible fade show shadow-sm`;
+            toast.setAttribute('role', 'alert');
+
+            let icon = type === 'success' ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-circle-exclamation"></i>';
+
+            toast.innerHTML = `
+                <span class="me-2">${icon}</span>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                const bsAlert = bootstrap.Alert.getInstance(toast);
+                if (bsAlert) {
+                    bsAlert.close();
+                } else {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+    });
+</script>
+{% endblock %}

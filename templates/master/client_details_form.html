@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | Glacier Cold Storage{% endblock %}
+
+{% block content %}
+
+<div class="row g-4 animate-fade-in">
+    <!-- Form Card -->
+    <div class="col-12 col-lg-9">
+        <div class="card border-0 shadow-sm bg-body">
+            <div class="card-header bg-transparent border-bottom py-3 px-4">
+                <h5 class="fw-bold mb-0 text-body-emphasis">Client Profile Form</h5>
+            </div>
+            
+            <form method="POST" novalidate class="p-4">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger mb-4 shadow-sm">
+                        <span class="me-2"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <!-- Row 1: Client Name & Mobile -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-8">
+                        <div class="row align-items-center">
+                            <label for="{{ form.client_name.id_for_label }}" class="col-12 col-sm-3 col-form-label fw-semibold">
+                                {{ form.client_name.label }} <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-12 col-sm-9">
+                                {{ form.client_name }}
+                                {% if form.client_name.errors %}
+                                    <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.client_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="row align-items-center">
+                            <label for="{{ form.mobile.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">
+                                {{ form.mobile.label }} <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-12 col-sm-8">
+                                {{ form.mobile }}
+                                {% if form.mobile.errors %}
+                                    <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.mobile.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2: Address & Area -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <div class="row align-items-center">
+                            <label for="{{ form.address.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">
+                                {{ form.address.label }} <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-12 col-sm-8">
+                                {{ form.address }}
+                                {% if form.address.errors %}
+                                    <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.address.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="row align-items-center">
+                            <label for="{{ form.area.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">
+                                {{ form.area.label }}
+                            </label>
+                            <div class="col-12 col-sm-8">
+                                {{ form.area }}
+                                {% if form.area.errors %}
+                                    <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.area.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 3: Client Type & Phone -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <div class="row align-items-center">
+                            <label for="{{ form.client_type.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">
+                                {{ form.client_type.label }}
+                            </label>
+                            <div class="col-12 col-sm-8">
+                                {{ form.client_type }}
+                                {% if form.client_type.errors %}
+                                    <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.client_type.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="row align-items-center">
+                            <label for="{{ form.phone.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">
+                                {{ form.phone.label }}
+                            </label>
+                            <div class="col-12 col-sm-8">
+                                {{ form.phone }}
+                                {% if form.phone.errors %}
+                                    <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.phone.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 4: Opening Balance (single input) & CrLimit -->
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-4">
+                        <div class="row align-items-center">
+                            <label for="id_opening_balance" class="col-12 col-sm-5 col-form-label fw-semibold">
+                                Opening Balance
+                            </label>
+                            <div class="col-12 col-sm-7">
+                                <div class="d-flex gap-2">
+                                    <div style="width:110px;">
+                                        {{ form.opening_side }}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        {{ form.opening_balance }}
+                                    </div>
+                                </div>
+                                {% if form.opening_balance.errors %}
+                                    <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.opening_balance.errors.0 }}</div>
+                                {% endif %}
+                                {% if form.opening_side.errors %}
+                                    <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.opening_side.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="row align-items-center">
+                            <label for="{{ form.crlimit.id_for_label }}" class="col-12 col-sm-5 col-form-label fw-semibold">
+                                {{ form.crlimit.label }}
+                            </label>
+                            <div class="col-12 col-sm-7">
+                                {{ form.crlimit }}
+                                {% if form.crlimit.errors %}
+                                    <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.crlimit.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <!-- keep empty or future fields -->
+                    </div>
+                </div>
+
+                <!-- Row 5: CrDays -->
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-6">
+                        <div class="row align-items-center">
+                            <label for="{{ form.crdays.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">
+                                {{ form.crdays.label }}
+                            </label>
+                            <div class="col-12 col-sm-8">
+                                {{ form.crdays }}
+                                {% if form.crdays.errors %}
+                                    <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.crdays.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                    <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary" id="saveClientSubmitBtn">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> {{ button_text }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

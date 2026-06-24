@@ -1,0 +1,649 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | Glacier Cold Storage{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block content %}
+
+<form method="POST" novalidate id="gpMasterForm" class="animate-fade-in">
+    {% csrf_token %}
+    {{ form.details_data }}
+    
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger mb-4 shadow-sm">
+            <span class="me-2"><i class="fa-solid fa-triangle-exclamation"></i></span>
+            {% for error in form.non_field_errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <!-- LEFT COLUMN: Name of Client & Item Grid -->
+        <div class="col-12 col-lg-7 d-flex flex-column gap-4">
+            
+            <!-- Card 1: Name of Client -->
+            <div class="card border-0 shadow-sm bg-body p-4">
+                <div class="form-group mb-0">
+                    <label for="clientSearchInput" class="form-label fw-bold text-primary">Name of Client <span class="text-danger">*</span></label>
+                    <div class="position-relative">
+                        <input type="text" id="clientSearchInput" class="form-control autocomplete-search-input" autocomplete="off">
+                        <div id="clientSuggestionList" class="list-group position-absolute w-100 border-0 d-none autocomplete-suggestions-list">
+                            <!-- Suggestions populated here -->
+                        </div>
+                    </div>
+                    <div class="d-none">
+                        {{ form.client_details }}
+                    </div>
+                    {% if form.client_details.errors %}
+                        <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.client_details.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Card 2: Item Entry & Grid Table -->
+            <div class="card border-0 shadow-sm bg-body p-4 flex-grow-1">
+                
+                <!-- Grid Layout: Add/Remove buttons on left, Inputs & Grid table on right -->
+                <div class="row g-3">
+                    <!-- Left: Add/Remove vertical buttons stacked -->
+                    <div class="col-12 col-sm-auto d-flex flex-sm-column gap-2 justify-content-start" style="min-width: 100px;">
+                        <!-- Spacer to align buttons with the grid table on desktop screens -->
+                        <div class="d-none d-sm-block" style="height: 78px;"></div>
+                        
+                        <button type="button" id="gridAddBtn" class="btn btn-outline-primary w-100 py-2 fw-semibold">
+                            <i class="fa-solid fa-plus me-1"></i> Add
+                        </button>
+                        <button type="button" id="gridRemoveBtn" class="btn btn-outline-danger w-100 py-2 fw-semibold">
+                            <i class="fa-solid fa-minus me-1"></i> Remove
+                        </button>
+                    </div>
+                    
+                    <!-- Right: Inputs & Grid Table -->
+                    <div class="col-12 col-sm">
+                        <!-- Grid Row Inputs (Item, Qty) above the grid -->
+                        <div class="row g-2 align-items-end mb-3">
+                            <div class="col">
+                                <label for="itemSearchInput" class="form-label fw-semibold text-primary">Item</label>
+                                <div class="position-relative">
+                                    <input type="text" id="itemSearchInput" class="form-control autocomplete-search-input" autocomplete="off">
+                                    <div id="itemSuggestionList" class="list-group position-absolute w-100 border-0 d-none autocomplete-suggestions-list" style="z-index: 1000;">
+                                        <!-- Suggestions populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-auto" style="width: 100px;">
+                                <label for="gridItemQty" class="form-label fw-semibold text-primary">Qty</label>
+                                <input type="number" id="gridItemQty" class="form-control text-end" min="0.01" step="0.01">
+                            </div>
+                        </div>
+
+                        <!-- Grid Table List -->
+                        <div class="table-responsive border rounded" style="max-height: 250px; overflow-y: auto;">
+                            <table class="table table-bordered table-hover align-middle mb-0" id="gridTable">
+                                <thead class="table-light text-nowrap">
+                                    <tr>
+                                        <th class="text-center col-width-sno">SNo.</th>
+                                        <th>Item</th>
+                                        <th class="text-end col-width-qty">Qty</th>
+                                        <th style="width: 80px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gridTableBody">
+                                    <!-- Dynamic rows from JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Row at bottom -->
+                <div class="d-flex justify-content-end align-items-center mt-4 pt-3 border-top gap-3">
+                    <span class="fw-bold fs-5 text-body-emphasis">Total:</span>
+                    <div style="width: 160px;">
+                        {{ form.total }}
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: GP Master Fields -->
+        <div class="col-12 col-lg-5">
+            <div class="card border-0 shadow-sm bg-body p-4 h-100 d-flex flex-column">
+                <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">Gate Pass Master Details</h5>
+                
+                <div class="d-flex flex-column gap-3 flex-grow-1">
+                    <div class="form-group row align-items-center">
+                        <label for="{{ form.gpno.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">GP No <span class="text-danger">*</span></label>
+                        <div class="col-12 col-sm-8">
+                            {{ form.gpno }}
+                            {% if form.gpno.errors %}
+                                <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.gpno.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-group row align-items-center">
+                        <label for="{{ form.gpdate.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">GP Date <span class="text-danger">*</span></label>
+                        <div class="col-12 col-sm-8">
+                            {{ form.gpdate }}
+                            {% if form.gpdate.errors %}
+                                <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.gpdate.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-group row align-items-center">
+                        <label for="{{ form.gptime.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">GP Time <span class="text-danger">*</span></label>
+                        <div class="col-12 col-sm-8">
+                            {{ form.gptime }}
+                            {% if form.gptime.errors %}
+                                <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.gptime.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-group row align-items-center">
+                        <label for="{{ form.storage_location.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">Vehicle</label>
+                        <div class="col-12 col-sm-8">
+                            {{ form.storage_location }}
+                            {% if form.storage_location.errors %}
+                                <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.storage_location.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-group row align-items-center">
+                        <label for="{{ form.recon.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">Rec No</label>
+                        <div class="col-12 col-sm-8">
+                            {{ form.recon }}
+                            {% if form.recon.errors %}
+                                <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.recon.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+ 
+                    <div class="form-group row align-items-center">
+                        <label for="{{ form.remark.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">Remark</label>
+                        <div class="col-12 col-sm-8">
+                            {{ form.remark }}
+                            {% if form.remark.errors %}
+                                <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.remark.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Print On Save checkbox matching screenshot -->
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" id="printOnCheck">
+                        <label class="form-check-label text-muted small fw-semibold" for="printOnCheck">
+                            Print On Save
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Actions bar -->
+    <div class="d-flex justify-content-end gap-2 mt-4 mb-5">
+        <a href="{% url 'gp_list' %}" class="btn btn-secondary shadow-sm">
+            <i class="fa-solid fa-door-open me-1"></i> Exit
+        </a>
+        <button type="submit" class="btn btn-primary shadow-sm" id="saveGPSubmitBtn">
+            <i class="fa-solid fa-floppy-disk me-1"></i> {{ button_text }}
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<!-- jQuery CDN -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    const itemsData = {{ items_json|safe }};
+    const clientsData = {{ parties_json|safe }};
+    const isEditMode = {{ is_edit|yesno:"true,false" }};
+
+    $(document).ready(function() {
+        const $clientSearchInput = $('#clientSearchInput');
+        const $clientSuggestionList = $('#clientSuggestionList');
+        const $hiddenClientSelect = $('#id_client_details');
+        
+        const $itemSearchInput = $('#itemSearchInput');
+        const $itemSuggestionList = $('#itemSuggestionList');
+        const $gridItemQty = $('#gridItemQty');
+        const $gridAddBtn = $('#gridAddBtn');
+        const $gridRemoveBtn = $('#gridRemoveBtn');
+        const $gridTableBody = $('#gridTableBody');
+
+        let activeSuggestionIndex = -1;
+        let activeItemSuggestionIndex = -1;
+
+        // Auto-initialize current date and time on creation mode
+        if (!isEditMode) {
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const timeStr = `${hours}:${minutes}`;
+            
+            $('#id_gpdate').val(dateStr);
+            $('#id_gptime').val(timeStr);
+        }
+
+        // Check if there's an initial client selected on edit
+        const initialClient = $hiddenClientSelect.val();
+        if (initialClient) {
+            $clientSearchInput.val(initialClient);
+        }
+
+        // Search typing event
+        $clientSearchInput.on('input focus', function() {
+            const query = $(this).val().toLowerCase().trim();
+            activeSuggestionIndex = -1;
+            
+            if (query.length === 0) {
+                $clientSuggestionList.addClass('d-none').empty();
+                $hiddenClientSelect.val('').trigger('change');
+                return;
+            }
+            const matches = [];
+            let count = 0;
+
+            // Search matches in clientsData
+            Object.keys(clientsData).forEach(function(clientName) {
+                const nameLower = clientName.toLowerCase();
+                const isMatch = nameLower.startsWith(query) || nameLower.split(/[\s\-]+/).some(function(word) {
+                    return word.startsWith(query);
+                });
+                if (isMatch) {
+                    if (count < 4) {
+                        matches.push({
+                            name: clientName,
+                            details: clientsData[clientName]
+                        });
+                        count++;
+                    }
+                }
+            });
+
+            if (matches.length > 0) {
+                $clientSuggestionList.empty().removeClass('d-none');
+                matches.forEach(function(match, index) {
+                    const itemHtml = `
+                        <div class="autocomplete-suggestion-item list-group-item list-group-item-action" data-name="${match.name}" data-index="${index}">
+                            <div class="client-name">${match.name}</div>
+                        </div>
+                    `;
+                    $clientSuggestionList.append(itemHtml);
+                });
+            } else {
+                $clientSuggestionList.html(`
+                    <div class="list-group-item text-muted text-center py-3">
+                        <i class="fa-solid fa-circle-info me-1"></i>No clients found
+                    </div>
+                `).removeClass('d-none');
+            }
+        });
+
+        // Click suggestion item
+        $clientSuggestionList.on('click', '.autocomplete-suggestion-item', function() {
+            const selectedName = $(this).data('name');
+            selectClient(selectedName);
+        });
+
+        // Keydown keyboard navigation
+        $clientSearchInput.on('keydown', function(e) {
+            const $items = $clientSuggestionList.find('.autocomplete-suggestion-item');
+            if ($clientSuggestionList.hasClass('d-none') || $items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeSuggestionIndex = (activeSuggestionIndex + 1) % $items.length;
+                highlightSuggestion($items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeSuggestionIndex = (activeSuggestionIndex - 1 + $items.length) % $items.length;
+                highlightSuggestion($items);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (activeSuggestionIndex >= 0 && activeSuggestionIndex < $items.length) {
+                    const selectedName = $($items[activeSuggestionIndex]).data('name');
+                    selectClient(selectedName);
+                }
+            } else if (e.key === 'Escape') {
+                $clientSuggestionList.addClass('d-none');
+            }
+        });
+
+        function highlightSuggestion($items) {
+            $items.removeClass('active');
+            if (activeSuggestionIndex >= 0) {
+                const $activeItem = $($items[activeSuggestionIndex]);
+                $activeItem.addClass('active');
+                
+                // Scroll suggestion item into view inside the list container if needed
+                const containerTop = $clientSuggestionList.scrollTop();
+                const containerBottom = containerTop + $clientSuggestionList.height();
+                const elemTop = $activeItem.position().top + containerTop;
+                const elemBottom = elemTop + $activeItem.outerHeight();
+
+                if (elemBottom > containerBottom) {
+                    $clientSuggestionList.scrollTop(elemBottom - $clientSuggestionList.height());
+                } else if (elemTop < containerTop) {
+                    $clientSuggestionList.scrollTop(elemTop);
+                }
+            }
+        }
+
+        function selectClient(name) {
+            $clientSearchInput.val(name);
+            $hiddenClientSelect.val(name).trigger('change');
+            $clientSuggestionList.addClass('d-none').empty();
+        }
+
+        // Click outside suggestions list to close it
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#clientSearchInput, #clientSuggestionList').length) {
+                $clientSuggestionList.addClass('d-none');
+            }
+        });
+
+        /* ==========================================================
+           GRID MANAGEMENT LOGIC (Matches Screenshot Flow)
+           ========================================================== */
+
+        // Add item row to the grid
+        function addDetailRow(itemname, qty) {
+            const rowHtml = `
+                <tr class="grid-row">
+                    <td class="text-center fw-semibold sno-cell"></td>
+                    <td class="item-name-cell fw-semibold text-body">${itemname}</td>
+                    <td class="text-end qty-cell font-monospace fw-semibold">${parseFloat(qty).toFixed(2)}</td>
+                    <td></td>
+                </tr>
+            `;
+            $gridTableBody.append(rowHtml);
+            recalculateGrid();
+        }
+
+        /* ==========================================================
+           ITEM AUTOCOMPLETE SEARCH
+           ========================================================== */
+        $itemSearchInput.on('input focus', function() {
+            const query = $(this).val().toLowerCase().trim();
+            activeItemSuggestionIndex = -1;
+            
+            if (query.length === 0) {
+                $itemSuggestionList.addClass('d-none').empty();
+                return;
+            }
+
+            const matches = itemsData.filter(function(itemName) {
+                const nameLower = itemName.toLowerCase();
+                return nameLower.startsWith(query) || nameLower.split(/[\s\-]+/).some(function(word) {
+                    return word.startsWith(query);
+                });
+            });
+
+            if (matches.length > 0) {
+                $itemSuggestionList.empty().removeClass('d-none');
+                matches.forEach(function(matchName, index) {
+                    const itemHtml = `
+                        <div class="autocomplete-suggestion-item list-group-item list-group-item-action" data-name="${matchName}" data-index="${index}">
+                            <div class="item-suggestion-name">${matchName}</div>
+                        </div>
+                    `;
+                    $itemSuggestionList.append(itemHtml);
+                });
+            } else {
+                $itemSuggestionList.html(`
+                    <div class="list-group-item text-muted text-center py-2">
+                        No items found
+                    </div>
+                `).removeClass('d-none');
+            }
+        });
+
+        // Click suggestion item
+        $itemSuggestionList.on('click', '.autocomplete-suggestion-item', function() {
+            const selectedName = $(this).data('name');
+            selectItem(selectedName);
+        });
+
+        // Keydown keyboard navigation
+        $itemSearchInput.on('keydown', function(e) {
+            const $items = $itemSuggestionList.find('.autocomplete-suggestion-item');
+            if ($itemSuggestionList.hasClass('d-none') || $items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeItemSuggestionIndex = (activeItemSuggestionIndex + 1) % $items.length;
+                highlightItemSuggestion($items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeItemSuggestionIndex = (activeItemSuggestionIndex - 1 + $items.length) % $items.length;
+                highlightItemSuggestion($items);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (activeItemSuggestionIndex >= 0 && activeItemSuggestionIndex < $items.length) {
+                    const selectedName = $($items[activeItemSuggestionIndex]).data('name');
+                    selectItem(selectedName);
+                }
+            } else if (e.key === 'Escape') {
+                $itemSuggestionList.addClass('d-none');
+            }
+        });
+
+        function highlightItemSuggestion($items) {
+            $items.removeClass('active');
+            if (activeItemSuggestionIndex >= 0) {
+                const $activeItem = $($items[activeItemSuggestionIndex]);
+                $activeItem.addClass('active');
+                
+                const containerTop = $itemSuggestionList.scrollTop();
+                const containerBottom = containerTop + $itemSuggestionList.height();
+                const elemTop = $activeItem.position().top + containerTop;
+                const elemBottom = elemTop + $activeItem.outerHeight();
+
+                if (elemBottom > containerBottom) {
+                    $itemSuggestionList.scrollTop(elemBottom - $itemSuggestionList.height());
+                } else if (elemTop < containerTop) {
+                    $itemSuggestionList.scrollTop(elemTop);
+                }
+            }
+        }
+
+        function selectItem(name) {
+            $itemSearchInput.val(name);
+            $itemSuggestionList.addClass('d-none').empty();
+        }
+
+        // Click outside item suggestions list to close it
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#itemSearchInput, #itemSuggestionList').length) {
+                $itemSuggestionList.addClass('d-none');
+            }
+        });
+
+        // Add button click handler
+        $gridAddBtn.on('click', function() {
+            const itemVal = $itemSearchInput.val().trim();
+            const qtyVal = parseFloat($gridItemQty.val());
+
+            if (!itemVal) {
+                showToast("Please enter and select an Item.", "danger");
+                $itemSearchInput.focus();
+                return;
+            }
+
+            const itemExists = itemsData.some(function(item) {
+                return item.toLowerCase() === itemVal.toLowerCase();
+            });
+            if (!itemExists) {
+                showToast("Selected Item does not exist. Please select a valid item.", "danger");
+                $itemSearchInput.focus();
+                return;
+            }
+
+            const exactItemName = itemsData.find(function(item) {
+                return item.toLowerCase() === itemVal.toLowerCase();
+            });
+
+            if (isNaN(qtyVal) || qtyVal <= 0) {
+                showToast("Please enter a valid positive Quantity.", "danger");
+                $gridItemQty.focus();
+                return;
+            }
+
+            addDetailRow(exactItemName, qtyVal);
+
+            // Reset inputs and focus back on item selection
+            $itemSearchInput.val('');
+            $gridItemQty.val('');
+            $itemSearchInput.focus();
+        });
+
+        // Enable pressing Enter in Qty field to trigger Add button click
+        $gridItemQty.on('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                $gridAddBtn.click();
+            }
+        });
+
+        // Row selection highlight
+        $gridTableBody.on('click', 'tr.grid-row', function() {
+            const isSelected = $(this).hasClass('grid-selected-row');
+            $gridTableBody.find('tr.grid-row').removeClass('grid-selected-row');
+            if (!isSelected) {
+                $(this).addClass('grid-selected-row');
+            }
+        });
+
+        // Remove button click handler
+        $gridRemoveBtn.on('click', function() {
+            const $selectedRow = $gridTableBody.find('tr.grid-selected-row');
+            if ($selectedRow.length > 0) {
+                $selectedRow.fadeOut(150, function() {
+                    $(this).remove();
+                    recalculateGrid();
+                });
+            } else {
+                showToast("Please click and select a row in the grid table first to remove it.", "danger");
+            }
+        });
+
+        // Recalculates SNo and Total
+        function recalculateGrid() {
+            let total = 0;
+            $gridTableBody.find('tr.grid-row').each(function(idx) {
+                $(this).find('.sno-cell').text(idx + 1);
+                const qty = parseFloat($(this).find('.qty-cell').text()) || 0;
+                total += qty;
+            });
+            $('#id_total').val(total.toFixed(2));
+        }
+
+        // Load existing detail rows in Edit mode
+        const existingDataStr = $('#id_details_data').val();
+        if (existingDataStr) {
+            try {
+                const existingData = JSON.parse(existingDataStr);
+                if (existingData && existingData.length > 0) {
+                    existingData.forEach(row => {
+                        addDetailRow(row.itemname, row.qty);
+                    });
+                }
+            } catch (e) {
+                console.error("Failed to parse initial details json:", e);
+            }
+        }
+
+        // On submit serialization
+        $('#gpMasterForm').on('submit', function(e) {
+            const rows = [];
+            let isValid = true;
+            let errorMessage = '';
+
+            const $detailRows = $gridTableBody.find('tr.grid-row');
+            
+            if ($detailRows.length === 0) {
+                e.preventDefault();
+                showToast("You must add at least one item row to the grid.", "danger");
+                return false;
+            }
+
+            $detailRows.each(function(idx, el) {
+                const $row = $(el);
+                const itemname = $row.find('.item-name-cell').text().trim();
+                const qty = $row.find('.qty-cell').text().trim();
+
+                if (!itemname) {
+                    isValid = false;
+                    errorMessage = `Row ${idx+1}: Item name is missing.`;
+                    return false;
+                }
+                if (!qty || parseFloat(qty) <= 0) {
+                    isValid = false;
+                    errorMessage = `Row ${idx+1}: Quantity must be a positive number.`;
+                    return false;
+                }
+
+                rows.push({
+                    itemname: itemname,
+                    qty: qty
+                });
+            });
+
+            if (!isValid) {
+                e.preventDefault();
+                showToast(errorMessage, "danger");
+                return false;
+            }
+
+            $('#id_details_data').val(JSON.stringify(rows));
+            return true;
+        });
+
+        function showToast(message, type) {
+            let container = document.getElementById('messagesContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'messagesContainer';
+                container.className = 'messages-container mb-4';
+                document.querySelector('.page-content-wrapper').prepend(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type === 'danger' ? 'danger' : 'success'} alert-dismissible fade show shadow-sm`;
+            toast.setAttribute('role', 'alert');
+
+            let icon = type === 'success' ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-circle-exclamation"></i>';
+
+            toast.innerHTML = `
+                <span class="me-2">${icon}</span>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                const bsAlert = bootstrap.Alert.getInstance(toast);
+                if (bsAlert) {
+                    bsAlert.close();
+                } else {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+    });
+</script>
+{% endblock %}

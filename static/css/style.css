@@ -1,0 +1,290 @@
+/* ==========================================================================
+   Glacier Cold Storage - Custom Bootstrap Overrides
+   ========================================================================== */
+
+/* Core Typography & Base Defaults */
+body {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 17px;
+}
+
+h1, h2, h3, h4, h5, h6, .brand-title {
+    font-family: 'Outfit', sans-serif !important;
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bs-tertiary-bg);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--bs-border-color);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-secondary-color);
+}
+
+/* ==========================================================================
+   Custom Sidebar Layout
+   ========================================================================== */
+.app-sidebar {
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transition: width 0.3s ease, transform 0.3s ease;
+    z-index: 100;
+}
+
+/* Sidebar Brand Snowflake Rotate */
+.brand-icon {
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: rotateSnowflake 12s linear infinite;
+}
+
+@keyframes rotateSnowflake {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.brand-title {
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+/* Sidebar Navigation Items */
+.app-sidebar .nav-link {
+    transition: all 0.2s ease;
+}
+
+.app-sidebar .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #ffffff !important;
+}
+
+.app-sidebar .nav-link.active {
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.25);
+}
+
+/* Sidebar Collapsed State */
+.app-sidebar.collapsed {
+    width: 80px;
+}
+
+.app-sidebar.collapsed .brand-text,
+.app-sidebar.collapsed .nav-item span,
+.app-sidebar.collapsed .sidebar-footer span {
+    display: none !important;
+}
+
+.app-sidebar.collapsed .brand-icon {
+    margin-right: 0 !important;
+}
+
+.app-sidebar.collapsed .nav-item a {
+    justify-content: center;
+    padding: 12px;
+}
+
+.app-sidebar.collapsed .nav-item a i {
+    margin-right: 0 !important;
+}
+
+.app-sidebar.collapsed .sidebar-brand {
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+.app-sidebar.collapsed .sidebar-footer {
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* ==========================================================================
+   Header Navbar & Actions
+   ========================================================================== */
+.app-header {
+    height: 70px;
+}
+
+.max-width-500 {
+    max-width: 500px;
+}
+
+/* Floating Alerts Container */
+.messages-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ==========================================================================
+   Keyframe Animations
+   ========================================================================== */
+.animate-fade-in {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* AJAX Table Row fade out */
+.row-fade-out td {
+    animation: rowFadeShrink 0.5s ease forwards;
+}
+
+@keyframes rowFadeShrink {
+    0% {
+        opacity: 1;
+        transform: scaleY(1);
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+    100% {
+        opacity: 0;
+        transform: scaleY(0);
+        padding-top: 0;
+        padding-bottom: 0;
+        line-height: 0;
+        height: 0;
+        border: none;
+    }
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+@media (max-width: 768px) {
+    .app-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        transform: translateX(-100%);
+        z-index: 1000 !important;
+    }
+    
+    .app-sidebar.sidebar-open {
+        transform: translateX(0);
+    }
+}
+
+/* Remove default spinner arrows in number inputs */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* ==========================================================================
+   GatePass & Autocomplete Suggestion Styles (GP Master & GP Detail forms)
+   ========================================================================== */
+
+/* Fixed Column Width Utilities */
+.col-width-sno {
+    width: 80px;
+}
+
+.col-width-qty {
+    width: 120px;
+}
+
+.col-width-action {
+    width: 100px;
+}
+
+.col-width-actions {
+    width: 130px;
+}
+
+/* Statistics Icon Sizing */
+.stats-icon {
+    width: 56px;
+    height: 56px;
+}
+
+/* Autocomplete suggestion dropdown list wrapper */
+.autocomplete-suggestions-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1050;
+    max-height: 175px;
+    overflow-y: auto;
+    border-radius: var(--bs-border-radius);
+    backdrop-filter: blur(12px);
+    background-color: rgba(var(--bs-body-bg-rgb), 0.95);
+    border: 1px solid var(--bs-border-color);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+    margin-top: 2px;
+}
+
+/* Individual suggestion row inside the autocomplete list */
+.autocomplete-suggestion-item {
+    cursor: pointer;
+    padding: 10px 15px;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(var(--bs-border-color-rgb), 0.5);
+    background: transparent;
+    color: var(--bs-body-color);
+}
+
+.autocomplete-suggestion-item:last-child {
+    border-bottom: none;
+}
+
+/* Interactive hover state with micro-slide effect */
+.autocomplete-suggestion-item:hover, 
+.autocomplete-suggestion-item.active {
+    background-color: var(--bs-primary-bg-subtle) !important;
+    color: var(--bs-primary-text-emphasis) !important;
+    padding-left: 20px !important;
+}
+
+.autocomplete-suggestion-item .party-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.autocomplete-suggestion-item .party-meta {
+    font-size: 0.8rem;
+    opacity: 0.75;
+}
+
+/* Custom focus style transition for autocomplete input boxes */
+.autocomplete-search-input:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Grid selected row highlight */
+.grid-selected-row {
+    background-color: var(--bs-primary-bg-subtle) !important;
+    color: var(--bs-primary-text-emphasis) !important;
+}
+#gridTableBody tr {
+    cursor: pointer;
+}
+
