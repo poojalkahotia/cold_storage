@@ -18,6 +18,10 @@
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    
     <!-- Custom CSS Overrides -->
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     
@@ -43,17 +47,17 @@
                     <li class="nav-item">
                         <a href="{% url 'client_details_create' %}" id="navLinkDashboard" class="nav-link py-3 px-3 rounded text-white-50 d-flex align-items-center {% if request.resolver_match.url_name == 'dashboard' or 'client_details' in request.resolver_match.url_name %}active bg-primary text-white{% endif %}">
                             <i class="fa-solid fa-chart-pie me-3 fs-5"></i>
-                            <span>Clients Master</span>
+                            <span>Client Details</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% url 'item_list' %}" id="navLinkItems" class="nav-link py-3 px-3 rounded text-white-50 d-flex align-items-center {% if 'item' in request.resolver_match.url_name %}active bg-primary text-white{% endif %}">
+                        <a href="{% url 'item_create' %}" id="navLinkItems" class="nav-link py-3 px-3 rounded text-white-50 d-flex align-items-center {% if 'item' in request.resolver_match.url_name %}active bg-primary text-white{% endif %}">
                             <i class="fa-solid fa-cubes me-3 fs-5"></i>
                             <span>Items Master</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% url 'incoming_list' %}" id="navLinkIncoming" class="nav-link py-3 px-3 rounded text-white-50 d-flex align-items-center {% if 'incoming' in request.resolver_match.url_name %}active bg-primary text-white{% endif %}">
+                        <a href="{% url 'incoming_create' %}" id="navLinkIncoming" class="nav-link py-3 px-3 rounded text-white-50 d-flex align-items-center {% if 'incoming' in request.resolver_match.url_name %}active bg-primary text-white{% endif %}">
                             <i class="fa-solid fa-file-import me-3 fs-5"></i>
                             <span>Incoming Stocks</span>
                         </a>
@@ -65,9 +69,15 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% url 'payment_list' %}" id="navLinkPayment" class="nav-link py-3 px-3 rounded text-white-50 d-flex align-items-center {% if 'payment' in request.resolver_match.url_name %}active bg-primary text-white{% endif %}">
+                        <a href="{% url 'payment_create' %}" id="navLinkPayment" class="nav-link py-3 px-3 rounded text-white-50 d-flex align-items-center {% if 'payment' in request.resolver_match.url_name %}active bg-primary text-white{% endif %}">
                             <i class="fa-solid fa-credit-card me-3 fs-5"></i>
                             <span>Payments Master</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'hamali_entry_create' %}" id="navLinkHamali" class="nav-link py-3 px-3 rounded text-white-50 d-flex align-items-center {% if 'hamali_entry' in request.resolver_match.url_name %}active bg-primary text-white{% endif %}">
+                            <i class="fa-solid fa-dolly me-3 fs-5"></i>
+                            <span>Hamali Entries</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -147,6 +157,15 @@
 
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    
+    <!-- jQuery CDN (required for Select2) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <!-- Global ERP-style Enter-as-Tab navigation -->
+    <script src="{% static 'js/form_navigation.js' %}"></script>
     
     <script>
         (function() {
@@ -293,6 +312,43 @@
                 initSidebar();
             }
         })();
+
+        // Select2 Initialization with Prefix Matching
+        $(document).ready(function() {
+            // Custom matcher function for prefix-based (startsWith) filtering
+            function prefixMatcher(params, data) {
+                // If there are no search terms, return all of the data
+                if ($.trim(params.term) === '') {
+                    return data;
+                }
+
+                // Do not display the item if there is no 'text' property
+                if (typeof data.text === 'undefined') {
+                    return null;
+                }
+
+                // Get the search term and convert to lowercase
+                var term = params.term.toLowerCase();
+                var text = data.text.toLowerCase();
+
+                // Return the object if the text starts with the term
+                if (text.indexOf(term) === 0) {
+                    return data;
+                }
+
+                // Return `null` if it doesn't match
+                return null;
+            }
+
+            // Initialize all Select2 selects with client_details class
+            $('.select2-client-details').select2({
+                placeholder: 'Type to search client names...',
+                allowClear: true,
+                theme: 'bootstrap-5',
+                matcher: prefixMatcher,
+                width: '100%'
+            });
+        });
     </script>
     
     {% block extra_js %}{% endblock %}

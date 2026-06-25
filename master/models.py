@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 class ClientDetails(models.Model):
     client_name = models.CharField(max_length=200, primary_key=True, db_column='partyname', verbose_name="Name")
@@ -68,6 +69,45 @@ class Item(models.Model):
 
     def __str__(self):
         return self.itemname
+
+
+class HamaliEntry(models.Model):
+    entry_no = models.AutoField(primary_key=True, verbose_name="Entry No")
+    entry_date = models.DateField(default=timezone.now, verbose_name="Entry Date")
+    party = models.ForeignKey(
+        ClientDetails,
+        on_delete=models.PROTECT,
+        related_name='hamali_entries',
+        verbose_name='Party'
+    )
+    item = models.ForeignKey(
+        Item,
+        on_delete=models.PROTECT,
+        related_name='hamali_entries',
+        verbose_name='Item'
+    )
+    hamali_type = models.CharField(max_length=100, verbose_name="Hamali Type")
+    rate = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Rate")
+    qty = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Qty")
+    amount = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Amount")
+    lot_no = models.CharField(max_length=100, blank=True, verbose_name="Lot No")
+    location = models.CharField(max_length=100, blank=True, verbose_name="Location")
+    remark = models.TextField(blank=True, verbose_name="Remark")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Updated At")
+
+    class Meta:
+        verbose_name = "Hamali Entry"
+        verbose_name_plural = "Hamali Entries"
+        ordering = ['-entry_date', '-entry_no']
+
+    def __str__(self):
+        return f"Hamali #{self.entry_no}"
+
+    def save(self, *args, **kwargs):
+        if self.rate is not None and self.qty is not None:
+            self.amount = self.rate * self.qty
+        super().save(*args, **kwargs)
 
 
 class IncomingMaster(models.Model):

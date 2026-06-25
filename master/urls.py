@@ -36,4 +36,10 @@ urlpatterns = [
     path('payment/add/', views.payment_create, name='payment_create'),
     path('payment/edit/<str:pk>/', views.payment_update, name='payment_update'),
     path('payment/delete/<str:pk>/', views.payment_delete, name='payment_delete'),
+
+    # Hamali Entry URLs
+    path('hamali-entry/', views.hamali_entry_list, name='hamali_entry_list'),
+    path('hamali-entry/add/', views.hamali_entry_create, name='hamali_entry_create'),
+    path('hamali-entry/edit/<int:pk>/', views.hamali_entry_update, name='hamali_entry_update'),
+    path('hamali-entry/delete/<int:pk>/', views.hamali_entry_delete, name='hamali_entry_delete'),
 ]

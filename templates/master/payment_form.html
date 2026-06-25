@@ -57,21 +57,13 @@
 
         <!-- ROW 2: Name of Client, Amount, Mode of Payment -->
         <div class="row g-3 mb-5">
-            <!-- Name of Client (Autocomplete) -->
+            <!-- Name of Client (Select2) -->
             <div class="col-12 col-md-5">
                 <div class="form-group">
-                    <label for="clientSearchInput" class="form-label fw-bold mb-1">
+                    <label for="{{ form.client_details.id_for_label }}" class="form-label fw-bold mb-1">
                         Name of Client <span class="text-danger">*</span>
                     </label>
-                    <div class="position-relative">
-                        <input type="text" id="clientSearchInput" class="form-control autocomplete-search-input" autocomplete="off">
-                        <div id="clientSuggestionList" class="list-group position-absolute w-100 border-0 d-none autocomplete-suggestions-list">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
-                    <div class="d-none">
-                        {{ form.client_details }}
-                    </div>
+                    {{ form.client_details }}
                     {% if form.client_details.errors %}
                         <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.client_details.errors.0 }}</div>
                     {% endif %}
@@ -221,23 +213,14 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- jQuery CDN -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    const clientsData = {{ parties_json|safe }};
     const isEditMode = {{ is_edit|yesno:"true,false" }};
 
     $(document).ready(function() {
-        const $clientSearchInput = $('#clientSearchInput');
-        const $clientSuggestionList = $('#clientSuggestionList');
-        const $hiddenClientSelect = $('#id_client_details');
-        
         const $incomingSelect = $('#id_incoming_no');
         const $zeroIncomingBtn = $('#zeroIncomingBtn');
         const $hideIncomingBtn = $('#hideIncomingBtn');
         const $incomingNoContainer = $('#incomingNoContainer');
-
-        let activeSuggestionIndex = -1;
 
         // Auto-initialize current date on creation mode
         if (!isEditMode) {
@@ -245,124 +228,6 @@
             const dateStr = now.toISOString().split('T')[0];
             $('#id_date').val(dateStr);
         }
-
-        // Check if there's an initial client selected on edit
-        const initialClient = $hiddenClientSelect.val();
-        if (initialClient) {
-            $clientSearchInput.val(initialClient);
-        }
-
-        // Autocomplete search events
-        $clientSearchInput.on('input focus', function() {
-            const query = $(this).val().toLowerCase().trim();
-            activeSuggestionIndex = -1;
-            
-            if (query.length === 0) {
-                $clientSuggestionList.addClass('d-none').empty();
-                $hiddenClientSelect.val('').trigger('change');
-                return;
-            }
-            const matches = [];
-            let count = 0;
-
-            // Search matches in clientsData
-            Object.keys(clientsData).forEach(function(clientName) {
-                const nameLower = clientName.toLowerCase();
-                const isMatch = nameLower.startsWith(query) || nameLower.split(/[\s\-]+/).some(function(word) {
-                    return word.startsWith(query);
-                });
-                if (isMatch) {
-                    if (count < 4) {
-                        matches.push({
-                            name: clientName,
-                            details: clientsData[clientName]
-                        });
-                        count++;
-                    }
-                }
-            });
-
-            if (matches.length > 0) {
-                $clientSuggestionList.empty().removeClass('d-none');
-                matches.forEach(function(match, index) {
-                    const itemHtml = `
-                        <div class="autocomplete-suggestion-item list-group-item list-group-item-action" data-name="${match.name}" data-index="${index}">
-                            <div class="client-name">${match.name}</div>
-                        </div>
-                    `;
-                    $clientSuggestionList.append(itemHtml);
-                });
-            } else {
-                $clientSuggestionList.html(`
-                    <div class="list-group-item text-muted text-center py-3">
-                        <i class="fa-solid fa-circle-info me-1"></i>No clients found
-                    </div>
-                `).removeClass('d-none');
-            }
-        });
-
-        // Click suggestion item
-        $clientSuggestionList.on('click', '.autocomplete-suggestion-item', function() {
-            const selectedName = $(this).data('name');
-            selectClient(selectedName);
-        });
-
-        // Keydown keyboard navigation
-        $clientSearchInput.on('keydown', function(e) {
-            const $items = $clientSuggestionList.find('.autocomplete-suggestion-item');
-            if ($clientSuggestionList.hasClass('d-none') || $items.length === 0) return;
-
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                activeSuggestionIndex = (activeSuggestionIndex + 1) % $items.length;
-                highlightSuggestion($items);
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                activeSuggestionIndex = (activeSuggestionIndex - 1 + $items.length) % $items.length;
-                highlightSuggestion($items);
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                if (activeSuggestionIndex >= 0 && activeSuggestionIndex < $items.length) {
-                    const selectedName = $($items[activeSuggestionIndex]).data('name');
-                    selectClient(selectedName);
-                }
-            } else if (e.key === 'Escape') {
-                $clientSuggestionList.addClass('d-none');
-            }
-        });
-
-        function highlightSuggestion($items) {
-            $items.removeClass('active');
-            if (activeSuggestionIndex >= 0) {
-                const $activeItem = $($items[activeSuggestionIndex]);
-                $activeItem.addClass('active');
-                
-                // Scroll suggestion item into view inside the list container if needed
-                const containerTop = $clientSuggestionList.scrollTop();
-                const containerBottom = containerTop + $clientSuggestionList.height();
-                const elemTop = $activeItem.position().top + containerTop;
-                const elemBottom = elemTop + $activeItem.outerHeight();
-
-                if (elemBottom > containerBottom) {
-                    $clientSuggestionList.scrollTop(elemBottom - $clientSuggestionList.height());
-                } else if (elemTop < containerTop) {
-                    $clientSuggestionList.scrollTop(elemTop);
-                }
-            }
-        }
-
-        function selectClient(name) {
-            $clientSearchInput.val(name);
-            $hiddenClientSelect.val(name).trigger('change');
-            $clientSuggestionList.addClass('d-none').empty();
-        }
-
-        // Click outside suggestions list to close it
-        $(document).on('click', function(e) {
-            if (!$(e.target).closest('#clientSearchInput, #clientSuggestionList').length) {
-                $clientSuggestionList.addClass('d-none');
-            }
-        });
 
         /* ==========================================================
            INCOMING NO BUTTON ACTIONS

@@ -1,13 +1,14 @@
 import re
 import json
+from decimal import Decimal
 from django import forms
 from django.db.models import Q
-from .models import ClientDetails, Item, IncomingMaster, IncomingDetail, FinalYear, GPMaster, GPDetail, Payment
+from .models import ClientDetails, Item, HamaliEntry, IncomingMaster, IncomingDetail, FinalYear, GPMaster, GPDetail, Payment
 
 class ClientDetailsForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # make opdr/opcr optional in the form if present; we'll primarily use a combined opening balance field
+        # make opdr/opcr optional in the form
         if 'opdr' in self.fields:
             self.fields['opdr'].required = False
         if 'opcr' in self.fields:
@@ -18,24 +19,11 @@ class ClientDetailsForm(forms.ModelForm):
             if 'opcr' in self.fields:
                 self.fields['opcr'].initial = None
 
-        # add helper fields: a single opening balance and its side (Dr/Cr)
-        self.fields['opening_balance'] = forms.DecimalField(
-            required=False,
-            max_digits=12,
-            decimal_places=2,
-            widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
-        )
-        self.fields['opening_side'] = forms.ChoiceField(
-            required=False,
-            choices=[('Dr', 'Dr'), ('Cr', 'Cr')],
-            widget=forms.Select(attrs={'class': 'form-select'})
-        )
-
     class Meta:
         model = ClientDetails
         fields = [
             'client_name', 'address', 'area', 'client_type',
-            'phone', 'mobile', 'crlimit', 'crdays'
+            'phone', 'mobile', 'opdr', 'opcr', 'crlimit', 'crdays'
         ]
         widgets = {
             'client_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -59,81 +47,52 @@ class ClientDetailsForm(forms.ModelForm):
                 raise forms.ValidationError("Mobile number must contain digits only.")
             if len(mobile) < 10 or len(mobile) > 12:
                 raise forms.ValidationError("Mobile number should be between 10 to 12 digits.")
-        return mobile
+        return mobile or ''
+
+    def clean_address(self):
+        address = self.cleaned_data.get('address')
+        return address or ''
+
+    def clean_area(self):
+        area = self.cleaned_data.get('area')
+        return area or ''
+
+    def clean_client_type(self):
+        client_type = self.cleaned_data.get('client_type')
+        return client_type or ''
+
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone')
+        return phone or ''
 
     def clean_opdr(self):
         opdr = self.cleaned_data.get('opdr')
-        if opdr is not None and opdr < 0:
+        if opdr is None:
+            return 0
+        if opdr < 0:
             raise forms.ValidationError("Opening Debit balance cannot be negative.")
         return opdr
 
     def clean_opcr(self):
         opcr = self.cleaned_data.get('opcr')
-        if opcr is not None and opcr < 0:
+        if opcr is None:
+            return 0
+        if opcr < 0:
             raise forms.ValidationError("Opening Credit balance cannot be negative.")
         return opcr
 
     def clean(self):
         cleaned_data = super().clean()
+        opdr = cleaned_data.get('opdr') or 0
+        opcr = cleaned_data.get('opcr') or 0
 
-        opening_balance = cleaned_data.get('opening_balance')
-        opening_side = cleaned_data.get('opening_side')
-
-        opdr = cleaned_data.get('opdr')
-        opcr = cleaned_data.get('opcr')
-
-        # If user provided the combined opening_balance, map it to opdr/opcr
-        if opening_balance not in (None, ''):
-            try:
-                val = float(opening_balance)
-            except (TypeError, ValueError):
-                self.add_error('opening_balance', "Invalid opening balance value.")
-                return cleaned_data
-
-            if val < 0:
-                self.add_error('opening_balance', "Opening balance cannot be negative.")
-                return cleaned_data
-
-            if opening_side == 'Cr':
-                cleaned_data['opcr'] = val
-                cleaned_data['opdr'] = 0
-            else:
-                cleaned_data['opdr'] = val
-                cleaned_data['opcr'] = 0
-        else:
-            # normalize None to 0 for validation
-            opdr = opdr or 0
-            opcr = opcr or 0
-
-            if opdr > 0 and opcr > 0:
-                error_msg = "A client can only have either an opening Debit OR Credit balance, not both."
-                self.add_error('opdr', error_msg)
-                self.add_error('opcr', error_msg)
+        # An account shouldn't have both initial debit and credit balances
+        if opdr > 0 and opcr > 0:
+            error_msg = "A client can only have either an opening Debit OR Credit balance, not both."
+            self.add_error('opdr', error_msg)
+            self.add_error('opcr', error_msg)
 
         return cleaned_data
-
-    def save(self, commit=True):
-        # Map opening_balance/opening_side into model fields opdr/opcr before saving
-        instance = super().save(commit=False)
-        opening_balance = self.cleaned_data.get('opening_balance')
-        opening_side = self.cleaned_data.get('opening_side')
-
-        if opening_balance not in (None, ''):
-            val = float(opening_balance)
-            if opening_side == 'Cr':
-                instance.opcr = val
-                instance.opdr = 0
-            else:
-                instance.opdr = val
-                instance.opcr = 0
-        else:
-            # default to zeros if not provided
-            instance.opdr = getattr(instance, 'opdr', 0) or 0
-            instance.opcr = getattr(instance, 'opcr', 0) or 0
-
-        if commit:
-            instance.save()
-        return instance
 
 
 class ItemForm(forms.ModelForm):
@@ -158,6 +117,57 @@ class ItemForm(forms.ModelForm):
         return storage_charge
 
 
+class HamaliEntryForm(forms.ModelForm):
+    class Meta:
+        model = HamaliEntry
+        fields = [
+            'entry_date', 'party', 'item', 'hamali_type',
+            'rate', 'qty', 'amount', 'lot_no', 'location', 'remark'
+        ]
+        widgets = {
+            'entry_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'party': forms.Select(attrs={
+                'class': 'form-control select2-client-details',
+                'data-placeholder': 'Search party by name...'
+            }),
+            'item': forms.Select(attrs={
+                'class': 'form-control select2-client-details',
+                'data-placeholder': 'Search item by name...'
+            }),
+            'hamali_type': forms.TextInput(attrs={'class': 'form-control'}),
+            'rate': forms.NumberInput(attrs={'class': 'form-control hamali-rate', 'step': '0.01', 'min': '0.01'}),
+            'qty': forms.NumberInput(attrs={'class': 'form-control hamali-qty', 'step': '0.01', 'min': '0.01'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
+            'lot_no': forms.TextInput(attrs={'class': 'form-control'}),
+            'location': forms.TextInput(attrs={'class': 'form-control'}),
+            'remark': forms.Textarea(attrs={'class': 'form-control form-textarea', 'rows': 3}),
+        }
+
+    def clean_rate(self):
+        rate = self.cleaned_data.get('rate')
+        if rate is None or rate <= Decimal('0.00'):
+            raise forms.ValidationError("Rate must be greater than zero.")
+        return rate
+
+    def clean_qty(self):
+        qty = self.cleaned_data.get('qty')
+        if qty is None or qty <= Decimal('0.00'):
+            raise forms.ValidationError("Qty must be greater than zero.")
+        return qty
+
+    def clean(self):
+        cleaned_data = super().clean()
+        rate = cleaned_data.get('rate')
+        qty = cleaned_data.get('qty')
+        if rate is not None and qty is not None:
+            cleaned_data['amount'] = rate * qty
+        return cleaned_data
+
+    def save(self, commit=True):
+        self.instance.amount = self.cleaned_data.get('amount') or Decimal('0.00')
+        return super().save(commit=commit)
+
+
 class IncomingMasterForm(forms.ModelForm):
     details_data = forms.CharField(widget=forms.HiddenInput(), required=False)
 
@@ -166,7 +176,7 @@ class IncomingMasterForm(forms.ModelForm):
         fields = ['incomingno', 'client_details', 'incoming_date', 'lotno', 'store_code']
         widgets = {
             'incomingno': forms.TextInput(attrs={'class': 'form-control'}),
-            'client_details': forms.Select(attrs={'class': 'form-control'}),
+            'client_details': forms.Select(attrs={'class': 'form-control select2-client-details'}),
             'incoming_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'lotno': forms.TextInput(attrs={'class': 'form-control'}),
             'store_code': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
@@ -269,7 +279,7 @@ class GPMasterForm(forms.ModelForm):
             'gpno': forms.TextInput(attrs={'class': 'form-control'}),
             'gpdate': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'gptime': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
-            'client_details': forms.Select(attrs={'class': 'form-control'}),
+            'client_details': forms.Select(attrs={'class': 'form-control select2-client-details'}),
             'total': forms.NumberInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
             'remark': forms.TextInput(attrs={'class': 'form-control'}),
             'storage_location': forms.TextInput(attrs={'class': 'form-control'}),
@@ -334,7 +344,7 @@ class PaymentForm(forms.ModelForm):
         widgets = {
             'paymentno': forms.TextInput(attrs={'class': 'form-control'}),
             'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'client_details': forms.Select(attrs={'class': 'form-control'}),
+            'client_details': forms.Select(attrs={'class': 'form-control select2-client-details'}),
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
             'mode_of_payment': forms.Select(attrs={'class': 'form-select'}),
             'bank_name': forms.TextInput(attrs={'class': 'form-control'}),

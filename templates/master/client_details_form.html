@@ -24,15 +24,19 @@
                         {% endfor %}
                     </div>
                 {% endif %}
-                
-                <!-- Row 1: Client Name & Mobile -->
-                <div class="row g-3 mb-3">
-                    <div class="col-12 col-md-8">
-                        <div class="row align-items-center">
-                            <label for="{{ form.client_name.id_for_label }}" class="col-12 col-sm-3 col-form-label fw-semibold">
+
+                <div class="mb-4 pb-2 border-bottom">
+                    <h6 class="mb-1 fw-semibold">Basic Information</h6>
+                    <p class="text-muted small mb-0">Enter client details and contact information.</p>
+                </div>
+
+                <div class="row gx-3 gy-3 mb-3 align-items-center">
+                    <div class="col-12 col-xl-6">
+                        <div class="row g-2 align-items-center">
+                            <label for="{{ form.client_name.id_for_label }}" class="col-auto col-form-label fw-semibold mb-0">
                                 {{ form.client_name.label }} <span class="text-danger">*</span>
                             </label>
-                            <div class="col-12 col-sm-9">
+                            <div class="col">
                                 {{ form.client_name }}
                                 {% if form.client_name.errors %}
                                     <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.client_name.errors.0 }}</div>
@@ -40,12 +44,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-md-4">
-                        <div class="row align-items-center">
-                            <label for="{{ form.mobile.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">
+                    <div class="col-12 col-xl-6">
+                        <div class="row g-2 align-items-center">
+                            <label for="{{ form.mobile.id_for_label }}" class="col-auto col-form-label fw-semibold mb-0">
                                 {{ form.mobile.label }} <span class="text-danger">*</span>
                             </label>
-                            <div class="col-12 col-sm-8">
+                            <div class="col">
                                 {{ form.mobile }}
                                 {% if form.mobile.errors %}
                                     <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.mobile.errors.0 }}</div>
@@ -53,16 +57,13 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Row 2: Address & Area -->
-                <div class="row g-3 mb-3">
-                    <div class="col-12 col-md-6">
-                        <div class="row align-items-center">
-                            <label for="{{ form.address.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">
+                    <div class="col-12">
+                        <div class="row g-2 align-items-center">
+                            <label for="{{ form.address.id_for_label }}" class="col-auto col-form-label fw-semibold mb-0">
                                 {{ form.address.label }} <span class="text-danger">*</span>
                             </label>
-                            <div class="col-12 col-sm-8">
+                            <div class="col">
                                 {{ form.address }}
                                 {% if form.address.errors %}
                                     <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.address.errors.0 }}</div>
@@ -70,12 +71,13 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-md-6">
-                        <div class="row align-items-center">
-                            <label for="{{ form.area.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">
+
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="row g-2 align-items-center">
+                            <label for="{{ form.area.id_for_label }}" class="col-auto col-form-label fw-semibold mb-0">
                                 {{ form.area.label }}
                             </label>
-                            <div class="col-12 col-sm-8">
+                            <div class="col">
                                 {{ form.area }}
                                 {% if form.area.errors %}
                                     <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.area.errors.0 }}</div>
@@ -83,16 +85,12 @@
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Row 3: Client Type & Phone -->
-                <div class="row g-3 mb-3">
-                    <div class="col-12 col-md-6">
-                        <div class="row align-items-center">
-                            <label for="{{ form.client_type.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="row g-2 align-items-center">
+                            <label for="{{ form.client_type.id_for_label }}" class="col-auto col-form-label fw-semibold mb-0">
                                 {{ form.client_type.label }}
                             </label>
-                            <div class="col-12 col-sm-8">
+                            <div class="col">
                                 {{ form.client_type }}
                                 {% if form.client_type.errors %}
                                     <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.client_type.errors.0 }}</div>
@@ -100,12 +98,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-md-6">
-                        <div class="row align-items-center">
-                            <label for="{{ form.phone.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="row g-2 align-items-center">
+                            <label for="{{ form.phone.id_for_label }}" class="col-auto col-form-label fw-semibold mb-0">
                                 {{ form.phone.label }}
                             </label>
-                            <div class="col-12 col-sm-8">
+                            <div class="col">
                                 {{ form.phone }}
                                 {% if form.phone.errors %}
                                     <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.phone.errors.0 }}</div>
@@ -115,37 +113,44 @@
                     </div>
                 </div>
 
-                <!-- Row 4: Opening Balance (single input) & CrLimit -->
-                <div class="row g-3 mb-4">
-                    <div class="col-12 col-md-4">
-                        <div class="row align-items-center">
-                            <label for="id_opening_balance" class="col-12 col-sm-5 col-form-label fw-semibold">
-                                Opening Balance
+                <div class="mb-4 pb-2 border-bottom">
+                    <h6 class="mb-1 fw-semibold">Financial Details</h6>
+                    <p class="text-muted small mb-0">Specify opening balances and credit terms.</p>
+                </div>
+
+                <div class="row gx-3 gy-3 mb-4 align-items-center">
+                    <div class="col-6 col-md-3">
+                        <div class="row g-2 align-items-center">
+                            <label for="{{ form.opdr.id_for_label }}" class="col-auto col-form-label fw-semibold mb-0">
+                                {{ form.opdr.label }}
                             </label>
-                            <div class="col-12 col-sm-7">
-                                <div class="d-flex gap-2">
-                                    <div style="width:110px;">
-                                        {{ form.opening_side }}
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        {{ form.opening_balance }}
-                                    </div>
-                                </div>
-                                {% if form.opening_balance.errors %}
-                                    <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.opening_balance.errors.0 }}</div>
-                                {% endif %}
-                                {% if form.opening_side.errors %}
-                                    <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.opening_side.errors.0 }}</div>
+                            <div class="col">
+                                {{ form.opdr }}
+                                {% if form.opdr.errors %}
+                                    <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.opdr.errors.0 }}</div>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-md-4">
-                        <div class="row align-items-center">
-                            <label for="{{ form.crlimit.id_for_label }}" class="col-12 col-sm-5 col-form-label fw-semibold">
+                    <div class="col-6 col-md-3">
+                        <div class="row g-2 align-items-center">
+                            <label for="{{ form.opcr.id_for_label }}" class="col-auto col-form-label fw-semibold mb-0">
+                                {{ form.opcr.label }}
+                            </label>
+                            <div class="col">
+                                {{ form.opcr }}
+                                {% if form.opcr.errors %}
+                                    <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.opcr.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="row g-2 align-items-center">
+                            <label for="{{ form.crlimit.id_for_label }}" class="col-auto col-form-label fw-semibold mb-0">
                                 {{ form.crlimit.label }}
                             </label>
-                            <div class="col-12 col-sm-7">
+                            <div class="col">
                                 {{ form.crlimit }}
                                 {% if form.crlimit.errors %}
                                     <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.crlimit.errors.0 }}</div>
@@ -153,19 +158,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-md-4">
-                        <!-- keep empty or future fields -->
-                    </div>
-                </div>
-
-                <!-- Row 5: CrDays -->
-                <div class="row g-3 mb-4">
-                    <div class="col-12 col-md-6">
-                        <div class="row align-items-center">
-                            <label for="{{ form.crdays.id_for_label }}" class="col-12 col-sm-4 col-form-label fw-semibold">
+                    <div class="col-6 col-md-3">
+                        <div class="row g-2 align-items-center">
+                            <label for="{{ form.crdays.id_for_label }}" class="col-auto col-form-label fw-semibold mb-0">
                                 {{ form.crdays.label }}
                             </label>
-                            <div class="col-12 col-sm-8">
+                            <div class="col">
                                 {{ form.crdays }}
                                 {% if form.crdays.errors %}
                                     <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ form.crdays.errors.0 }}</div>

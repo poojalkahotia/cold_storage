@@ -5,8 +5,8 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Sum, Q, Avg
 from django.core.paginator import Paginator
-from .models import ClientDetails, Item, IncomingMaster, IncomingDetail, FinalYear, GPMaster, GPDetail, Payment
-from .forms import ClientDetailsForm, ItemForm, IncomingMasterForm, FinalYearForm, GPMasterForm, PaymentForm
+from .models import ClientDetails, Item, HamaliEntry, IncomingMaster, IncomingDetail, FinalYear, GPMaster, GPDetail, Payment
+from .forms import ClientDetailsForm, ItemForm, HamaliEntryForm, IncomingMasterForm, FinalYearForm, GPMasterForm, PaymentForm
 
 def dashboard(request):
     search_query = request.GET.get('search', '').strip()
@@ -716,6 +716,86 @@ def payment_delete(request, pk):
         'error': 'Invalid request method.'
     }, status=400)
 
+
+def hamali_entry_list(request):
+    search_query = request.GET.get('search', '').strip()
+    entries = HamaliEntry.objects.select_related('party', 'item').all()
+
+    if search_query:
+        filters = (
+            Q(party__client_name__icontains=search_query)
+            | Q(item__itemname__icontains=search_query)
+            | Q(entry_date__icontains=search_query)
+            | Q(hamali_type__icontains=search_query)
+        )
+        if search_query.isdigit():
+            filters |= Q(entry_no=search_query)
+        entries = entries.filter(filters)
+
+    stats = {
+        'total_entries': entries.count(),
+    }
+
+    paginator = Paginator(entries.order_by('-entry_date', '-entry_no'), 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'stats': stats,
+    }
+    return render(request, 'master/hamali_entry_list.html', context)
+
+
+def hamali_entry_create(request):
+    if request.method == 'POST':
+        form = HamaliEntryForm(request.POST)
+        if form.is_valid():
+            entry = form.save()
+            messages.success(request, f"Hamali entry #{entry.entry_no} saved successfully!")
+            return redirect('hamali_entry_list')
+    else:
+        form = HamaliEntryForm()
+
+    return render(request, 'master/hamali_entry_form.html', {
+        'form': form,
+        'title': 'Add Hamali Entry',
+        'button_text': 'Save Entry'
+    })
+
+
+def hamali_entry_update(request, pk):
+    entry = get_object_or_404(HamaliEntry, pk=pk)
+    if request.method == 'POST':
+        form = HamaliEntryForm(request.POST, instance=entry)
+        if form.is_valid():
+            entry = form.save()
+            messages.success(request, f"Hamali entry #{entry.entry_no} updated successfully!")
+            return redirect('hamali_entry_list')
+    else:
+        form = HamaliEntryForm(instance=entry)
+
+    return render(request, 'master/hamali_entry_form.html', {
+        'form': form,
+        'title': 'Edit Hamali Entry',
+        'button_text': 'Update Entry'
+    })
+
+
+def hamali_entry_delete(request, pk):
+    if request.method == 'POST':
+        entry = get_object_or_404(HamaliEntry, pk=pk)
+        entry_no = entry.entry_no
+        entry.delete()
+        return JsonResponse({
+            'success': True,
+            'message': f"Hamali entry #{entry_no} has been successfully deleted."
+        })
+    return JsonResponse({
+        'success': False,
+        'error': 'Invalid request method.'
+    }, status=400)
 
 
 
